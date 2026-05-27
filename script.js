@@ -13,6 +13,8 @@ const state = {
   rotinas:     [],
   treinoHist:  [],
   dietaGerada: false,
+  perfil:      { nome: "", altura: "", peso: "" },
+  imcHist:     []
 };
 
 /* ════════════════════════════════════════
@@ -24,30 +26,27 @@ const api = {
       const res  = await fetch("/api/user");
       const data = await res.json();
       Object.assign(state, data);
-      // dietaGerada não fica no servidor, usa sessionStorage
       state.dietaGerada = sessionStorage.getItem("dietaGerada") === "1";
     } catch {
-      // fallback: sessionStorage se servidor não responder
-      state.progress    = parseInt(sessionStorage.getItem("progress")   || "0");
-      state.workouts    = parseInt(sessionStorage.getItem("workouts")   || "0");
-      state.goal        = sessionStorage.getItem("goal")                || "";
-      state.rotinas     = JSON.parse(sessionStorage.getItem("rotinas")  || "[]");
+      state.progress    = parseInt(sessionStorage.getItem("progress")    || "0");
+      state.workouts    = parseInt(sessionStorage.getItem("workouts")    || "0");
+      state.goal        = sessionStorage.getItem("goal")                 || "";
+      state.rotinas     = JSON.parse(sessionStorage.getItem("rotinas")   || "[]");
       state.treinoHist  = JSON.parse(sessionStorage.getItem("treinoHist") || "[]");
       state.streak      = parseInt(sessionStorage.getItem("streak")     || "0");
       state.lastWorkout = sessionStorage.getItem("lastWorkout")         || "";
       state.dietaGerada = sessionStorage.getItem("dietaGerada")         === "1";
+      state.perfil      = JSON.parse(sessionStorage.getItem("perfil")   || '{"nome":"","altura":"","peso":""}');
+      state.imcHist     = JSON.parse(sessionStorage.getItem("imcHist")  || "[]");
       log("warn", "Backend offline — usando dados locais");
     }
   },
 
   async save(patch) {
-    // Atualiza estado local imediatamente (optimistic update)
     Object.assign(state, patch);
-    // Espelha no sessionStorage como fallback
     for (const [k, v] of Object.entries(patch)) {
       sessionStorage.setItem(k, typeof v === "object" ? JSON.stringify(v) : v);
     }
-    // Envia ao backend sem bloquear a UI
     try {
       await fetch("/api/user", {
         method:  "PATCH",
@@ -150,7 +149,6 @@ function syncProgress(value, save = true) {
   const prev = state.progress;
   const next = Math.min(100, Math.max(0, value));
 
-  // Atualiza UI
   const pct = next + "%";
   ["progressFill","dashProgressBar","barFill"].forEach(id => {
     const el = document.getElementById(id);
@@ -368,7 +366,6 @@ function resetProgress() {
 }
 window.resetProgress = resetProgress;
 
-
 /* ════════════════════════════════════════
    ROTINA
 ════════════════════════════════════════ */
@@ -377,7 +374,7 @@ function salvarRotina() {
   const treino = document.getElementById("treinoDia").value.trim();
   const dieta  = document.getElementById("dietaDia").value.trim();
 
-  if (!data)             { toast("Escolha uma data!", "warning");                          return; }
+  if (!data)              { toast("Escolha uma data!", "warning");                                  return; }
   if (!treino && !dieta) { toast("Preencha treino ou alimentação.", "warning");             return; }
 
   const newRotinas = [...state.rotinas, { data, treino, dieta }];
@@ -426,6 +423,93 @@ function renderRotinas(rotinas) {
 }
 
 /* ════════════════════════════════════════
+   PERFIL E CÁLCULO DE IMC
+════════════════════════════════════════ */
+function salvarPerfil(e) {
+  e.preventDefault();
+  
+  const nome = document.getElementById("perfilNome").value.trim();
+  const altura = parseFloat(document.getElementById("perfilAltura").value);
+  const peso = parseFloat(document.getElementById("perfilPeso").value);
+
+  if (!nome || isNaN(altura) || isNaN(peso)) {
+    toast("Preencha todos os campos corretamente.", "warning");
+    return;
+  }
+
+  const alturaMetros = altura / 100;
+  const imcVal = (peso / (alturaMetros * alturaMetros)).toFixed(1);
+  
+  let classe = "imc-badge--normal";
+  let resultado = "Peso Normal";
+
+  if (imcVal < 18.5) {
+    resultado = "Abaixo do Peso";
+    classe = "imc-badge--alerta";
+  } else if (imcVal >= 25 && imcVal < 30) {
+    resultado = "Sobrepeso";
+    classe = "imc-badge--alerta";
+  } else if (imcVal >= 30) {
+    resultado = "Obesidade";
+    classe = "imc-badge--perigo";
+  }
+
+  const novoPerfil = { nome, altura, peso };
+  const novaMedicao = {
+    data: new Date().toLocaleDateString("pt-BR"),
+    peso: peso + " kg",
+    imc: imcVal,
+    resultado,
+    classe,
+    ts: Date.now()
+  };
+
+  const novoHist = [novaMedicao, ...state.imcHist].slice(0, 15);
+
+  state.perfil = novoPerfil;
+  api.save({ perfil: novoPerfil, imcHist: novoHist });
+
+  renderImcHist(novoHist);
+  toast(`Perfil salvo! Seu IMC é ${imcVal} (${resultado}).`, "success");
+}
+
+function renderImcHist(hist) {
+  const h = hist ?? state.imcHist;
+  const container = document.getElementById("historicoImcLista");
+  if (!container) return;
+
+  if (!h.length) {
+    container.innerHTML = `<tr><td colspan="4" style="color:var(--muted); text-align:center; font-size:.85rem; padding: 20px;">Nenhuma medição cadastrada.</td></tr>`;
+    return;
+  }
+
+  container.innerHTML = h.map(m => `
+    <tr>
+      <td>${m.data}</td>
+      <td><strong>${m.peso}</strong></td>
+      <td>${m.imc}</td>
+      <td><span class="imc-badge ${m.classe}">${m.resultado}</span></td>
+    </tr>
+  `).join("");
+}
+
+function limparHistoricoIMC() {
+  showModal("Apagar Histórico de IMC", "Deseja realmente deletar todas as suas medições passadas?", [
+    {
+      label: "Apagar tudo",
+      danger: true,
+      fn: "_confirmarLimparIMC"
+    }
+  ]);
+}
+
+window._confirmarLimparIMC = function() {
+  api.save({ imcHist: [] });
+  renderImcHist([]);
+  toast("Histórico de medições limpo.", "info");
+};
+
+/* ════════════════════════════════════════
    HELPERS
 ════════════════════════════════════════ */
 function formatDate(iso) {
@@ -441,7 +525,6 @@ function escHtml(str) {
    INIT
 ════════════════════════════════════════ */
 window.addEventListener("DOMContentLoaded", async () => {
-  // Injetar keyframes de animação
   const style = document.createElement("style");
   style.textContent = `
     @keyframes slideInToast  { from{opacity:0;transform:translateX(60px)} to{opacity:1;transform:translateX(0)} }
@@ -450,15 +533,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   `;
   document.head.appendChild(style);
 
-  // Data no badge
   const dateBadge = document.getElementById("dateBadge");
   if (dateBadge) dateBadge.textContent = new Date().toLocaleDateString("pt-BR", { weekday:"long", day:"numeric", month:"long" });
 
-  // Carrega dados do servidor
   await api.loadUser();
 
-  // Renderiza tudo com dados carregados
-  syncProgress(state.progress, false); // false = não re-salva
+  syncProgress(state.progress, false);
   document.getElementById("dashWorkouts").textContent = state.workouts;
   renderStreak();
 
@@ -476,10 +556,16 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (s) s.innerHTML = "<span class=\"status-dot status-dot--on\"></span><span>Dieta gerada</span>";
   }
 
+  if (state.perfil && state.perfil.nome) {
+    document.getElementById("perfilNome").value = state.perfil.nome;
+    document.getElementById("perfilAltura").value = state.perfil.altura;
+    document.getElementById("perfilPeso").value = state.perfil.peso;
+  }
+
   renderTreinoHist();
   renderRotinas();
+  renderImcHist();
 
-  // Validação visual do input de progresso
   document.getElementById("progressInput")?.addEventListener("input", function() {
     const v = parseInt(this.value);
     this.style.borderColor = (isNaN(v) || v < 0 || v > 100) ? "#f44" : "";
