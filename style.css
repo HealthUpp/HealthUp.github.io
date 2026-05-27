@@ -48,7 +48,7 @@ body{
 .app{display:flex;height:100vh;overflow:hidden}
 
 /* ══════════════════════════════════════════
-   SIDEBAR
+   SIDEBAR (DESKTOP)
 ══════════════════════════════════════════ */
 .sidebar{
   width:var(--sidebar-w);
@@ -163,8 +163,9 @@ body{
   display:grid;
   grid-template-columns:repeat(4,1fr);
   gap:16px;
-  margin-bottom:24px;
+  margin-bottom:20px;
 }
+.dash-card[style*="span 2"] { grid-column: span 2 }
 
 .dash-card{
   border-radius:var(--r-md);
@@ -224,6 +225,12 @@ body{
   --icon-color:var(--orange);
   --card-grad:linear-gradient(135deg,#e67e00,#ffb347);
 }
+.dash-card--red {
+  background: rgba(255,80,80,.06);
+  --icon-bg: rgba(255,80,80,.12);
+  --icon-color: #ff6b6b;
+  --card-grad: linear-gradient(135deg,#a00,#ff6b6b);
+}
 
 /* ── DASH PROGRESS ── */
 .dash-progress-block{
@@ -244,10 +251,10 @@ body{
 /* ── DASH BOTTOM ── */
 .dash-bottom{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:1fr 1fr 1fr;
   gap:16px;
 }
-.dash-status-box,.dash-shortcuts{
+.dash-status-box,.dash-shortcuts,.dash-hist-box{
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:var(--r-md);
@@ -294,6 +301,18 @@ body{
 }
 .shortcut-btn svg{color:var(--accent);flex-shrink:0}
 .shortcut-btn:hover{background:rgba(0,198,255,.1);border-color:rgba(0,198,255,.3);transform:translateX(3px)}
+
+.hist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: .85rem;
+}
+.hist-item:last-child { border-bottom: none }
+.hist-item strong { color: var(--accent) }
+.hist-item span   { color: var(--muted); font-size: .78rem }
 
 /* ══════════════════════════════════════════
    FORM ELEMENTS
@@ -364,6 +383,7 @@ textarea{resize:vertical;min-height:80px}
   display:flex;
   justify-content:space-between;
   align-items:center;
+  animation: fadeUp .35s ease both;
   transition:transform var(--ease),background var(--ease),border-color var(--ease);
 }
 .exercise:hover{transform:scale(1.015);background:var(--surface-h);border-color:var(--border-h)}
@@ -374,6 +394,14 @@ textarea{resize:vertical;min-height:80px}
   background:rgba(0,198,255,.1);
   padding:3px 10px;
   border-radius:20px;
+}
+.ex-num {
+  width: 24px; height: 24px;
+  background: rgba(0,198,255,.12);
+  color: var(--accent);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 700; flex-shrink: 0;
 }
 
 /* ══════════════════════════════════════════
@@ -427,44 +455,6 @@ textarea{resize:vertical;min-height:80px}
 .bar-label{color:var(--muted);font-size:.82rem;margin-top:6px}
 
 /* ══════════════════════════════════════════
-   CHAT
-══════════════════════════════════════════ */
-.chat{
-  height:300px;
-  overflow-y:auto;
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--r-md);
-  padding:16px;
-  margin-bottom:10px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-.msg{
-  padding:9px 13px;
-  border-radius:var(--r-sm);
-  font-size:.88rem;
-  line-height:1.55;
-  max-width:85%;
-  animation:fadeUp .3s ease both;
-}
-.msg.user{
-  background:linear-gradient(135deg,var(--accent-dark),var(--accent));
-  align-self:flex-end;
-  border-bottom-right-radius:3px;
-}
-.msg.ai{
-  background:rgba(255,255,255,.07);
-  align-self:flex-start;
-  border-bottom-left-radius:3px;
-}
-.msg.ai.typing{color:var(--muted);font-style:italic}
-.chat-input-row{display:flex;gap:8px;align-items:center}
-.chat-input-row input{margin:0;flex:1}
-.chat-input-row .btn{margin:0;flex-shrink:0}
-
-/* ══════════════════════════════════════════
    ROTINA
 ══════════════════════════════════════════ */
 .rotina-container{display:grid;grid-template-columns:1fr 1fr;gap:24px}
@@ -495,7 +485,6 @@ textarea{resize:vertical;min-height:80px}
 .itemRotina p{font-size:.83rem;color:var(--muted);margin:3px 0}
 .itemRotina .rotina-actions{margin-top:10px}
 
-/* ── META DISPLAY ── */
 .meta-goal-display{
   display:none;
   align-items:center;
@@ -510,85 +499,6 @@ textarea{resize:vertical;min-height:80px}
 }
 .meta-goal-display.show{display:flex}
 
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar{width:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:10px}
-::-webkit-scrollbar-thumb:hover{background:var(--accent)}
-
-/* ══════════════════════════════════════════
-   RESPONSIVIDADE
-══════════════════════════════════════════ */
-@media(max-width:1100px){
-  .dash-cards{grid-template-columns:repeat(2,1fr)}
-}
-@media(max-width:900px){
-  .diet-grid,.rotina-container,.dash-bottom{grid-template-columns:1fr}
-}
-@media(max-width:640px){
-  .app{flex-direction:column;height:auto;min-height:100vh;overflow-y:auto}
-  .sidebar{
-    width:100%;flex-direction:row;flex-wrap:wrap;
-    padding:10px;border-right:none;border-bottom:1px solid var(--border);
-  }
-  .sidebar-logo{padding:4px 8px 8px;border-bottom:none;margin-bottom:0;width:100%}
-  .nav-list{flex-direction:row;flex-wrap:wrap;gap:3px;width:100%}
-  .nav{flex:1 1 auto;text-align:center;padding:7px 4px;font-size:.72rem;justify-content:center}
-  .nav svg{display:none}
-  .sidebar-footer{display:none}
-  .content{padding:14px;height:auto;overflow-y:visible}
-  .dash-cards{grid-template-columns:1fr 1fr}
-}
-
-/* ══════════════════════════════════════════
-   ADIÇÕES v3.0
-══════════════════════════════════════════ */
-
-/* Número do exercício */
-.ex-num {
-  width: 24px; height: 24px;
-  background: rgba(0,198,255,.12);
-  color: var(--accent);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: .75rem; font-weight: 700; flex-shrink: 0;
-}
-
-/* Card vermelho/meta */
-.dash-card--red {
-  background: rgba(255,80,80,.06);
-  --icon-bg: rgba(255,80,80,.12);
-  --icon-color: #ff6b6b;
-  --card-grad: linear-gradient(135deg,#a00,#ff6b6b);
-}
-
-/* Histórico de treinos no dashboard */
-.dash-hist-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 20px;
-}
-.hist-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: .85rem;
-}
-.hist-item:last-child { border-bottom: none }
-.hist-item strong { color: var(--accent) }
-.hist-item span   { color: var(--muted); font-size: .78rem }
-
-/* Dash bottom com 3 colunas */
-.dash-bottom {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px;
-}
-
-/* Streak block na página Progresso */
 .streak-block {
   display: flex;
   align-items: center;
@@ -601,31 +511,155 @@ textarea{resize:vertical;min-height:80px}
   color: var(--orange);
 }
 
-/* Grid de cards — 4 colunas + meta wide */
-.dash-cards {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 20px;
+/* ══════════════════════════════════════════
+   TABELA DE IMC (PERFIL)
+══════════════════════════════════════════ */
+.imc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .88rem;
+  text-align: left;
 }
-.dash-card[style*="span 2"] { grid-column: span 2 }
+.imc-table th {
+  padding: 10px 12px;
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.imc-table td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  color: var(--text);
+}
+.imc-table tr:last-child td { border-bottom: none }
+.imc-table tr:hover td { background: rgba(255,255,255,0.02) }
 
-/* Animação escalonada nos exercícios */
-.exercise { animation: fadeUp .35s ease both }
+.imc-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: .78rem;
+  font-weight: 600;
+}
+.imc-badge--normal { background: rgba(0,230,118,0.12); color: var(--green); }
+.imc-badge--alerta { background: rgba(255,179,71,0.12); color: var(--orange); }
+.imc-badge--perigo { background: rgba(255,107,107,0.12); color: #ff6b6b; }
 
-/* ── RESPONSIVIDADE v3 ── */
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+
+/* ══════════════════════════════════════════
+   RESPONSIVIDADE (MEDIA QUERIES)
+══════════════════════════════════════════ */
 @media(max-width:1200px) {
   .dash-cards { grid-template-columns: repeat(3,1fr) }
   .dash-card[style*="span 2"] { grid-column: span 2 }
 }
+
 @media(max-width:900px) {
   .dash-cards { grid-template-columns: repeat(2,1fr) }
   .dash-card[style*="span 2"] { grid-column: span 2 }
   .dash-bottom { grid-template-columns: 1fr 1fr }
   .diet-grid, .rotina-container { grid-template-columns: 1fr }
 }
-@media(max-width:640px) {
-  .dash-cards { grid-template-columns: 1fr 1fr }
-  .dash-card[style*="span 2"] { grid-column: span 2 }
-  .dash-bottom { grid-template-columns: 1fr }
+
+/* ══════════════════════════════════════════
+   RESPONSIVIDADE MOBILE ULTRA-OTIMIZADA (v3.2)
+══════════════════════════════════════════ */
+@media(max-width:640px){
+  .app {
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Transforma a barra lateral na barra de navegação inferior */
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom));
+    border-right: none;
+    border-top: 1px solid var(--border);
+    background: rgba(10, 14, 24, 0.96);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 9999;
+    gap: 0;
+    justify-content: space-around;
+  }
+
+  .sidebar-logo, .sidebar-footer {
+    display: none !important;
+  }
+
+  .nav-list {
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-between;
+    gap: 2px;
+  }
+
+  .nav {
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 2px;
+    font-size: 0.68rem;
+    text-align: center;
+    background: none;
+    border: 1px solid transparent;
+  }
+
+  /* Força a exibição dos ícones no celular */
+  .nav svg {
+    display: block !important;
+    width: 18px;
+    height: 18px;
+    opacity: 0.6;
+  }
+
+  .nav.active {
+    background: transparent;
+    border-color: transparent;
+    color: var(--accent);
+  }
+  
+  .nav.active svg {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px var(--accent-glow));
+  }
+
+  /* Conteúdo com scroll independente para não sumir atrás do menu */
+  .content {
+    padding: 20px 16px;
+    padding-bottom: 90px; 
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .dash-cards {
+    grid-template-columns: 1fr !important;
+  }
+  .dash-card[style*="span 2"] {
+    grid-column: span 1 !important;
+  }
+
+  .dash-bottom {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .imc-table th, .imc-table td {
+    padding: 8px;
+    font-size: 0.8rem;
+  }
 }
