@@ -9,7 +9,6 @@
 <body>
 <div class="app">
 
-  <!-- ══ SIDEBAR ══ -->
   <aside class="sidebar">
     <div class="sidebar-logo">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
@@ -40,14 +39,16 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span>Rotina</span>
       </button>
+      <button class="nav" onclick="navigate('perfil',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Perfil</span>
+      </button>
     </nav>
     <div class="sidebar-footer">HealthUp Pro v3.0</div>
   </aside>
 
-  <!-- ══ CONTENT ══ -->
   <main class="content">
 
-    <!-- ════ DASHBOARD ════ -->
     <section id="home" class="page show">
       <div class="page-header">
         <div>
@@ -114,7 +115,6 @@
         </div>
       </div>
 
-      <!-- Barra de progresso -->
       <div class="dash-progress-block">
         <div class="dash-progress-header">
           <span>Progresso em direção à meta</span>
@@ -123,7 +123,6 @@
         <div class="bar"><div class="bar-fill" id="dashProgressBar"></div></div>
       </div>
 
-      <!-- Status + Atalhos + Histórico -->
       <div class="dash-bottom">
         <div class="dash-status-box">
           <p class="dash-section-title">Status</p>
@@ -156,7 +155,6 @@
       </div>
     </section>
 
-    <!-- ════ TREINO ════ -->
     <section id="treino" class="page">
       <div class="page-header">
         <div>
@@ -181,7 +179,6 @@
       <div id="workoutList" class="exercise-list"></div>
     </section>
 
-    <!-- ════ DIETA ════ -->
     <section id="dieta" class="page">
       <div class="page-header">
         <div>
@@ -211,7 +208,6 @@
       </div>
     </section>
 
-    <!-- ════ META ════ -->
     <section id="meta" class="page">
       <div class="page-header">
         <div>
@@ -246,7 +242,6 @@
       </div>
     </section>
 
-    <!-- ════ PROGRESSO ════ -->
     <section id="progresso" class="page">
       <div class="page-header">
         <div>
@@ -273,7 +268,6 @@
       </div>
     </section>
 
-    <!-- ════ ROTINA ════ -->
     <section id="rotina" class="page">
       <div class="page-header">
         <div>
@@ -296,6 +290,63 @@
         </div>
         <div class="rotina-lista" id="historicoRotina">
           <p style="color:var(--muted);font-size:.9rem">Nenhuma rotina salva ainda.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="perfil" class="page">
+      <div class="page-header">
+        <div>
+          <h2>Meu Perfil de Saúde</h2>
+          <p class="section-desc">Gerencie seus dados e acompanhe a evolução do seu IMC</p>
+        </div>
+      </div>
+      
+      <div class="rotina-container">
+        <div class="rotina-form">
+          <p class="dash-section-title">Dados Corporais</p>
+          <form id="formPerfil" onsubmit="salvarPerfil(event)">
+            <label class="form-label">Nome Completo</label>
+            <input type="text" id="perfilNome" placeholder="Seu nome" required>
+            
+            <div style="display:flex; gap:12px;">
+              <div style="flex:1">
+                <label class="form-label">Altura (cm)</label>
+                <input type="number" id="perfilAltura" placeholder="Ex: 175" required>
+              </div>
+              <div style="flex:1">
+                <label class="form-label">Peso Atual (kg)</label>
+                <input type="number" step="0.1" id="perfilPeso" placeholder="Ex: 72.5" required>
+              </div>
+            </div>
+            
+            <button type="submit" class="btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v14a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Salvar e Calcular IMC
+            </button>
+          </form>
+        </div>
+
+        <div class="rotina-form" style="display:flex; flex-direction:column;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <p class="dash-section-title" style="margin:0;">Histórico de Medições</p>
+            <button class="btn btn-sm" style="background:rgba(255,255,255,.05); color:var(--muted); border:1px solid var(--border); margin:0;" onclick="limparHistoricoIMC()">Apagar tudo</button>
+          </div>
+          
+          <div style="flex:1; overflow-y:auto; max-height:320px;">
+            <table class="imc-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Peso</th>
+                  <th>IMC</th>
+                  <th>Resultado</th>
+                </tr>
+              </thead>
+              <tbody id="historicoImcLista">
+                </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
