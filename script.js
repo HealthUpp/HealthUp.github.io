@@ -57,20 +57,7 @@ const api = {
     } catch {
       log("warn", "Falha ao salvar no servidor — dados mantidos localmente");
     }
-  },
-
-  async chat(messages, system) {
-    const res  = await fetch("/api/chat", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system, messages }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `HTTP ${res.status}`);
-    }
-    return res.json();
-  },
+  }
 };
 
 function log(level, msg) {
@@ -314,33 +301,18 @@ function renderTreinoHist(hist) {
 }
 
 /* ════════════════════════════════════════
-   DIETA — gerada pela IA
+   DIETA — sugestões locais
 ════════════════════════════════════════ */
-async function generateDiet() {
+function generateDiet() {
   const btn = document.querySelector("#dieta .btn");
-  if (btn) { btn.disabled = true; btn.textContent = "Gerando com IA…"; }
+  if (btn) { btn.disabled = true; btn.textContent = "Gerando dieta…"; }
 
-  const fallbackPre  = ["Banana com aveia e mel","Tapioca com queijo branco","Pão integral com pasta de amendoim","Batata-doce assada"];
-  const fallbackPost = ["Arroz integral + frango grelhado","Whey protein + fruta","Wrap com ovo mexido + legumes","Omelete com queijo e espinafre"];
+  const preMeals  = ["Banana com aveia e mel","Tapioca com queijo branco","Pão integral com pasta de amendoim","Batata-doce assada"];
+  const postMeals = ["Arroz integral + frango grelhado","Whey protein + fruta","Wrap com ovo mexido + legumes","Omelete com queijo e espinafre"];
 
-  try {
-    const data = await api.chat(
-      [{ role: "user", content: `Gere 4 sugestões de refeições pré-treino e 4 pós-treino para um atleta fitness.
-Retorne APENAS este JSON (sem markdown, sem texto extra):
-{"pre":["item1","item2","item3","item4"],"post":["item1","item2","item3","item4"]}` }],
-      "Você é nutricionista fitness. Responda APENAS com JSON válido."
-    );
-    const text = data.content?.map(b => b.text || "").join("") || "";
-    const json = JSON.parse(text.replace(/```json|```/g, "").trim());
-
-    document.getElementById("preWorkout").innerHTML  = json.pre.map(e  => `<div class="diet-item">${escHtml(e)}</div>`).join("");
-    document.getElementById("postWorkout").innerHTML = json.post.map(e => `<div class="diet-item">${escHtml(e)}</div>`).join("");
-    toast("Dieta gerada pela IA! 🥗", "success");
-  } catch {
-    document.getElementById("preWorkout").innerHTML  = fallbackPre.map(e  => `<div class="diet-item">${e}</div>`).join("");
-    document.getElementById("postWorkout").innerHTML = fallbackPost.map(e => `<div class="diet-item">${e}</div>`).join("");
-    toast("Dieta gerada com sugestões padrão.", "info");
-  }
+  document.getElementById("preWorkout").innerHTML  = preMeals.map(e  => `<div class="diet-item">${escHtml(e)}</div>`).join("");
+  document.getElementById("postWorkout").innerHTML = postMeals.map(e => `<div class="diet-item">${escHtml(e)}</div>`).join("");
+  toast("Dieta gerada com sugestões disponíveis! 🥗", "success");
 
   state.dietaGerada = true;
   sessionStorage.setItem("dietaGerada", "1");
@@ -396,53 +368,6 @@ function resetProgress() {
 }
 window.resetProgress = resetProgress;
 
-/* ════════════════════════════════════════
-   AI COACH
-════════════════════════════════════════ */
-const SYSTEM_PROMPT = `Você é um personal trainer e nutricionista especializado em fitness.
-Responda em português do Brasil, de forma direta, prática e motivadora.
-Limite suas respostas a 3-4 frases no máximo.
-Foque exclusivamente em treino, dieta, suplementação e saúde física.`;
-
-const chatHistory = [];
-
-async function sendAI() {
-  const input   = document.getElementById("userMsg");
-  const chatBox = document.getElementById("chatBox");
-  const msg     = input.value.trim();
-  if (!msg) return;
-
-  input.value    = "";
-  input.disabled = true;
-
-  appendMsg(chatBox, "user", msg);
-  chatHistory.push({ role: "user", content: msg });
-  const typingEl = appendMsg(chatBox, "ai typing", "Digitando…");
-
-  try {
-    const data  = await api.chat(chatHistory, SYSTEM_PROMPT);
-    const reply = data.content?.map(b => b.text || "").join("") || "Não consegui responder agora.";
-    chatHistory.push({ role: "assistant", content: reply });
-    typingEl.className   = "msg ai";
-    typingEl.textContent = reply;
-  } catch (err) {
-    typingEl.className   = "msg ai";
-    typingEl.textContent = `Erro: ${err.message}`;
-  }
-
-  input.disabled = false;
-  input.focus();
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function appendMsg(container, cls, text) {
-  const el = document.createElement("div");
-  el.className   = "msg " + cls;
-  el.textContent = text;
-  container.appendChild(el);
-  container.scrollTop = container.scrollHeight;
-  return el;
-}
 
 /* ════════════════════════════════════════
    ROTINA
@@ -553,13 +478,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   renderTreinoHist();
   renderRotinas();
-
-  // Boas-vindas no chat
-  const chatBox = document.getElementById("chatBox");
-  if (chatBox) appendMsg(chatBox, "ai", "👋 Olá! Sou seu AI Coach. Pergunte sobre treino, dieta, suplementação ou qualquer dúvida de saúde e fitness!");
-
-  // Enter no chat
-  document.getElementById("userMsg")?.addEventListener("keydown", e => { if (e.key === "Enter") sendAI(); });
 
   // Validação visual do input de progresso
   document.getElementById("progressInput")?.addEventListener("input", function() {
