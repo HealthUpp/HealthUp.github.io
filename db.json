@@ -1,0 +1,14 @@
+{
+  "users": {
+    "::1": {
+      "progress": 0,
+      "workouts": 0,
+      "streak": 0,
+      "lastWorkout": "",
+      "goal": "",
+      "rotinas": [],
+      "treinoHist": []
+    }
+  },
+  "dicas": null
+}

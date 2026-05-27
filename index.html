@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HealthUp Pro</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      <span>HealthUp</span>
+    </div>
+    <nav class="nav-list">
+      <button class="nav active" onclick="navigate('home',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav" onclick="navigate('treino',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+        <span>Treino</span>
+      </button>
+      <button class="nav" onclick="navigate('dieta',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+        <span>Dieta</span>
+      </button>
+      <button class="nav" onclick="navigate('meta',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        <span>Meta</span>
+      </button>
+      <button class="nav" onclick="navigate('progresso',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Progresso</span>
+      </button>
+      <button class="nav" onclick="navigate('ia',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>AI Coach</span>
+      </button>
+      <button class="nav" onclick="navigate('rotina',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>Rotina</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">HealthUp Pro v3.0</div>
+  </aside>
+
+  <!-- ══ CONTENT ══ -->
+  <main class="content">
+
+    <!-- ════ DASHBOARD ════ -->
+    <section id="home" class="page show">
+      <div class="page-header">
+        <div>
+          <h2>Dashboard</h2>
+          <p class="section-desc">Visão geral da sua semana</p>
+        </div>
+        <div class="date-badge" id="dateBadge"></div>
+      </div>
+
+      <div class="dash-cards">
+        <div class="dash-card dash-card--blue">
+          <div class="dash-card__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+          </div>
+          <div class="dash-card__body">
+            <p class="dash-card__label">Treinos</p>
+            <p class="dash-card__value" id="dashWorkouts">0</p>
+            <p class="dash-card__sub">realizados</p>
+          </div>
+        </div>
+
+        <div class="dash-card dash-card--orange">
+          <div class="dash-card__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <div class="dash-card__body">
+            <p class="dash-card__label">Sequência</p>
+            <p class="dash-card__value" id="dashStreak">0 dias</p>
+            <p class="dash-card__sub">consecutivos</p>
+          </div>
+        </div>
+
+        <div class="dash-card dash-card--purple">
+          <div class="dash-card__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <div class="dash-card__body">
+            <p class="dash-card__label">Progresso</p>
+            <p class="dash-card__value" id="dashProg">0%</p>
+            <p class="dash-card__sub">do objetivo</p>
+          </div>
+        </div>
+
+        <div class="dash-card dash-card--green">
+          <div class="dash-card__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+          </div>
+          <div class="dash-card__body">
+            <p class="dash-card__label">Dieta</p>
+            <p class="dash-card__value" id="dashDiet">–</p>
+            <p class="dash-card__sub">status</p>
+          </div>
+        </div>
+
+        <div class="dash-card dash-card--red" style="grid-column:span 2">
+          <div class="dash-card__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          </div>
+          <div class="dash-card__body" style="flex:1">
+            <p class="dash-card__label">Meta atual</p>
+            <p class="dash-card__value" id="dashMeta" style="font-size:1.1rem;margin:4px 0">—</p>
+            <p class="dash-card__sub">objetivo definido</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de progresso -->
+      <div class="dash-progress-block">
+        <div class="dash-progress-header">
+          <span>Progresso em direção à meta</span>
+          <span id="dashProgLabel">0%</span>
+        </div>
+        <div class="bar"><div class="bar-fill" id="dashProgressBar"></div></div>
+      </div>
+
+      <!-- Status + Atalhos + Histórico -->
+      <div class="dash-bottom">
+        <div class="dash-status-box">
+          <p class="dash-section-title">Status</p>
+          <div class="status-row"><span class="status-dot status-dot--on"></span><span>Conta ativa</span></div>
+          <div class="status-row"><span class="status-dot status-dot--on"></span><span>AI Coach disponível</span></div>
+          <div class="status-row" id="statusDieta"><span class="status-dot status-dot--off"></span><span>Dieta não gerada</span></div>
+        </div>
+
+        <div class="dash-shortcuts">
+          <p class="dash-section-title">Atalhos rápidos</p>
+          <button class="shortcut-btn" onclick="navigate('treino', document.querySelectorAll('.nav')[1])">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+            Gerar treino
+          </button>
+          <button class="shortcut-btn" onclick="navigate('dieta', document.querySelectorAll('.nav')[2])">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+            Ver dieta
+          </button>
+          <button class="shortcut-btn" onclick="navigate('ia', document.querySelectorAll('.nav')[5])">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Falar com AI
+          </button>
+          <button class="shortcut-btn" onclick="navigate('progresso', document.querySelectorAll('.nav')[4])">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Marcar treino
+          </button>
+        </div>
+
+        <div class="dash-hist-box">
+          <p class="dash-section-title">Últimos treinos</p>
+          <div id="treinoHistorico">
+            <p style="color:var(--muted);font-size:.85rem">Nenhum treino ainda.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ TREINO ════ -->
+    <section id="treino" class="page">
+      <div class="page-header">
+        <div>
+          <h2>Treino Inteligente</h2>
+          <p class="section-desc">Selecione o grupo muscular para gerar os exercícios</p>
+        </div>
+      </div>
+      <select id="muscle">
+        <option value="">— Escolha o músculo —</option>
+        <option value="peito">Peito</option>
+        <option value="costas">Costas</option>
+        <option value="perna">Perna</option>
+        <option value="biceps">Bíceps</option>
+        <option value="triceps">Tríceps</option>
+        <option value="ombro">Ombro</option>
+        <option value="abdomen">Abdômen</option>
+      </select>
+      <button class="btn" onclick="generateWorkout()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Gerar treino
+      </button>
+      <div id="workoutList" class="exercise-list"></div>
+    </section>
+
+    <!-- ════ DIETA ════ -->
+    <section id="dieta" class="page">
+      <div class="page-header">
+        <div>
+          <h2>Dieta Inteligente</h2>
+          <p class="section-desc">Refeições geradas pela IA para o seu objetivo</p>
+        </div>
+      </div>
+      <button class="btn" onclick="generateDiet()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Gerar dieta com IA
+      </button>
+      <div class="diet-grid">
+        <div class="diet-box">
+          <h3>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Pré-treino
+          </h3>
+          <div id="preWorkout"><p style="color:var(--muted);font-size:.85rem">Clique em "Gerar dieta com IA" para carregar.</p></div>
+        </div>
+        <div class="diet-box">
+          <h3>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Pós-treino
+          </h3>
+          <div id="postWorkout"><p style="color:var(--muted);font-size:.85rem">Clique em "Gerar dieta com IA" para carregar.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ META ════ -->
+    <section id="meta" class="page">
+      <div class="page-header">
+        <div>
+          <h2>Minha Meta</h2>
+          <p class="section-desc">Defina e acompanhe seu objetivo principal</p>
+        </div>
+      </div>
+      <input id="goalInput" placeholder="Ex: Ganhar massa muscular até dezembro">
+      <button class="btn" onclick="setGoal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v14a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Salvar meta
+      </button>
+      <div class="meta-goal-display" id="goalDisplay">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        <span id="goalText"></span>
+      </div>
+
+      <p style="margin-top:24px;color:var(--muted);font-size:.85rem;margin-bottom:4px">Atualizar progresso manualmente</p>
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        <div style="flex:1">
+          <input id="progressInput" type="number" min="0" max="100" placeholder="Digite % (0–100)">
+        </div>
+        <button class="btn" style="margin-top:0;flex-shrink:0" onclick="updateGoal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Atualizar
+        </button>
+      </div>
+      <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <p class="bar-label" id="barLabel">0%</p>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.08);color:var(--muted);border:1px solid var(--border);margin:0" onclick="resetProgress()">Resetar</button>
+      </div>
+    </section>
+
+    <!-- ════ PROGRESSO ════ -->
+    <section id="progresso" class="page">
+      <div class="page-header">
+        <div>
+          <h2>Progresso Geral</h2>
+          <p class="section-desc">Cada treino concluído avança 10% — sincronizado com a Meta</p>
+        </div>
+      </div>
+      <button class="btn" onclick="updateProgress()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Marcar treino concluído
+      </button>
+      <div class="bar" style="margin-top:20px"><div class="bar-fill" id="progressFill"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <p class="bar-label" id="progressText">0%</p>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.08);color:var(--muted);border:1px solid var(--border);margin:0" onclick="resetProgress()">Resetar progresso</button>
+      </div>
+
+      <div class="streak-block">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        <div>
+          <p style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Sequência atual</p>
+          <p id="streakDisplay" style="font-size:1.3rem;font-weight:700;color:var(--orange)">0 dias</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ AI COACH ════ -->
+    <section id="ia" class="page">
+      <div class="page-header">
+        <div>
+          <h2>AI Coach</h2>
+          <p class="section-desc">Personal trainer inteligente — powered by Claude</p>
+        </div>
+      </div>
+      <div id="chatBox" class="chat"></div>
+      <div class="chat-input-row">
+        <input id="userMsg" placeholder="Pergunte sobre treino, dieta, suplementação…">
+        <button class="btn" onclick="sendAI()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Enviar
+        </button>
+      </div>
+    </section>
+
+    <!-- ════ ROTINA ════ -->
+    <section id="rotina" class="page">
+      <div class="page-header">
+        <div>
+          <h2>Rotina Semanal</h2>
+          <p class="section-desc">Registre treino e alimentação por dia</p>
+        </div>
+      </div>
+      <div class="rotina-container">
+        <div class="rotina-form">
+          <label class="form-label">Data</label>
+          <input type="date" id="dataInput">
+          <label class="form-label">Treino do dia</label>
+          <textarea id="treinoDia" placeholder="Ex: Supino 4x10, Rosca 3x12…"></textarea>
+          <label class="form-label">Alimentação do dia</label>
+          <textarea id="dietaDia" placeholder="Ex: Café da manhã: ovos + aveia…"></textarea>
+          <button class="btn" onclick="salvarRotina()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v14a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Salvar rotina
+          </button>
+        </div>
+        <div class="rotina-lista" id="historicoRotina">
+          <p style="color:var(--muted);font-size:.9rem">Nenhuma rotina salva ainda.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
