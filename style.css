@@ -555,6 +555,139 @@ textarea{resize:vertical;min-height:80px}
 ::-webkit-scrollbar-thumb:hover{background:var(--accent)}
 
 /* ══════════════════════════════════════════
+   CLASSES ADICIONADAS: GRID & MODAL DE TREINOS
+══════════════════════════════════════════ */
+#customMuscleGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 14px;
+  padding: 20px 0;
+  width: 100%;
+}
+
+.custom-muscle-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 22px 16px;
+  border-radius: var(--r-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  min-height: 105px;
+  transition: background var(--ease), border-color var(--ease), transform var(--ease);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  text-align: center;
+}
+
+.custom-muscle-card:hover {
+  background: var(--surface-h);
+  transform: translateY(-3px);
+  border-color: rgba(0, 198, 255, 0.4);
+}
+
+.custom-muscle-card:active {
+  transform: scale(0.97);
+}
+
+.custom-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  animation: fadeModalIn .2s ease both;
+}
+
+.custom-modal-content {
+  background: #0c1525;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 26px;
+  max-width: 460px;
+  width: 92%;
+  box-shadow: 0 24px 60px rgba(0,0,0,.6);
+}
+
+.custom-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.custom-modal-header h3 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.custom-modal-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.6rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+  transition: color var(--ease);
+}
+
+.custom-modal-close:hover {
+  color: var(--text);
+}
+
+.custom-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 22px;
+}
+
+.custom-exercise-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  padding: 14px 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+}
+
+.custom-exercise-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+}
+
+.custom-exercise-badge {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: rgba(0,198,255,.1);
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+
+.custom-exercise-row input[type="checkbox"] {
+  width: 19px;
+  height: 19px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  margin: 0;
+}
+
+/* ══════════════════════════════════════════
    RESPONSIVIDADE (MEDIA QUERIES)
 ══════════════════════════════════════════ */
 @media(max-width:1200px) {
@@ -579,7 +712,6 @@ textarea{resize:vertical;min-height:80px}
     overflow: hidden;
   }
 
-  /* Transforma a barra lateral na barra de navegação inferior */
   .sidebar {
     width: 100%;
     flex-direction: row;
@@ -619,7 +751,6 @@ textarea{resize:vertical;min-height:80px}
     border: 1px solid transparent;
   }
 
-  /* Força a exibição dos ícones no celular */
   .nav svg {
     display: block !important;
     width: 18px;
@@ -638,7 +769,6 @@ textarea{resize:vertical;min-height:80px}
     filter: drop-shadow(0 0 4px var(--accent-glow));
   }
 
-  /* Conteúdo com scroll independente para não sumir atrás do menu */
   .content {
     padding: 20px 16px;
     padding-bottom: 90px; 
@@ -661,5 +791,11 @@ textarea{resize:vertical;min-height:80px}
   .imc-table th, .imc-table td {
     padding: 8px;
     font-size: 0.8rem;
+  }
+
+  /* Ajuste responsivo dos quadradinhos no Mobile */
+  #customMuscleGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
   }
 }
