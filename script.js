@@ -1,573 +1,557 @@
-/* ═══════════════════════════════════════════════════════════════
-   HealthUp Pro — script.js v3.1
-   Estado sincronizado com o backend via /api/user
-═══════════════════════════════════════════════════════════════ */
-
-/* ── Estado local (espelho do servidor) ── */
-const state = {
-  progress:    0,
-  workouts:    0,
-  streak:      0,
-  lastWorkout: "",
-  goal:        "",
-  rotinas:     [],
-  treinoHist:  [],
-  dietaGerada: false,
-  perfil:      { nome: "", altura: "", peso: "" },
-  imcHist:     []
+/* ══════════════════════════════════════════
+   ESTADO GLOBAL DA APLICAÇÃO (LOCALSTORAGE)
+══════════════════════════════════════════ */
+let appState = {
+  workoutsCount: 0,
+  streak: 0,
+  progress: 0,
+  currentGoal: "",
+  dietGenerated: false,
+  routines: [],
+  imcHistory: [],
+  profile: { name: "", height: "", weight: "" },
+  lastWorkoutDate: null
 };
 
-/* ════════════════════════════════════════
-   API — comunicação com o backend
-════════════════════════════════════════ */
-const api = {
-  async loadUser() {
-    try {
-      const res  = await fetch("/api/user");
-      const data = await res.json();
-      Object.assign(state, data);
-      state.dietaGerada = sessionStorage.getItem("dietaGerada") === "1";
-    } catch {
-      state.progress    = parseInt(sessionStorage.getItem("progress")    || "0");
-      state.workouts    = parseInt(sessionStorage.getItem("workouts")    || "0");
-      state.goal        = sessionStorage.getItem("goal")                 || "";
-      state.rotinas     = JSON.parse(sessionStorage.getItem("rotinas")   || "[]");
-      state.treinoHist  = JSON.parse(sessionStorage.getItem("treinoHist") || "[]");
-      state.streak      = parseInt(sessionStorage.getItem("streak")     || "0");
-      state.lastWorkout = sessionStorage.getItem("lastWorkout")         || "";
-      state.dietaGerada = sessionStorage.getItem("dietaGerada")         === "1";
-      state.perfil      = JSON.parse(sessionStorage.getItem("perfil")   || '{"nome":"","altura":"","peso":""}');
-      state.imcHist     = JSON.parse(sessionStorage.getItem("imcHist")  || "[]");
-      log("warn", "Backend offline — usando dados locais");
-    }
-  },
+if (localStorage.getItem("healthup_data")) {
+  appState = JSON.parse(localStorage.getItem("healthup_data"));
+}
 
-  async save(patch) {
-    Object.assign(state, patch);
-    for (const [k, v] of Object.entries(patch)) {
-      sessionStorage.setItem(k, typeof v === "object" ? JSON.stringify(v) : v);
-    }
-    try {
-      await fetch("/api/user", {
-        method:  "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(patch),
-      });
-    } catch {
-      log("warn", "Falha ao salvar no servidor — dados mantidos localmente");
+/* ══════════════════════════════════════════
+   INICIALIZAÇÃO & NAVEGAÇÃO
+══════════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded", () => {
+  updateDateBadge();
+  renderDashboard();
+  loadProfileData();
+  renderIMCHistory();
+  renderRoutineList();
+  injetaEstilosAnimacao();
+});
+
+function navigate(pageId, buttonElement) {
+  document.querySelectorAll(".page").forEach(page => page.classList.remove("show"));
+  document.querySelectorAll(".nav").forEach(btn => btn.classList.remove("active"));
+  
+  const targetPage = document.getElementById(pageId);
+  if (targetPage) targetPage.classList.add("show");
+  
+  if (buttonElement) {
+    buttonElement.classList.add("active");
+  } else {
+    document.querySelectorAll(".nav").forEach(btn => {
+      if (btn.getAttribute("onclick") && btn.getAttribute("onclick").includes(`'${pageId}'`)) {
+        btn.classList.add("active");
+      }
+    });
+  }
+}
+
+function updateDateBadge() {
+  const badge = document.getElementById("dateBadge");
+  if (badge) {
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    badge.textContent = new Date().toLocaleDateString('pt-BR', options);
+  }
+}
+
+function saveState() {
+  localStorage.setItem("healthup_data", JSON.stringify(appState));
+  renderDashboard();
+}
+
+/* ══════════════════════════════════════════
+   DASHBOARD MANAGEMENT
+══════════════════════════════════════════ */
+function renderDashboard() {
+  if (document.getElementById("dashWorkouts")) document.getElementById("dashWorkouts").textContent = appState.workoutsCount;
+  if (document.getElementById("dashStreak")) document.getElementById("dashStreak").textContent = `${appState.streak} dias`;
+  if (document.getElementById("dashProg")) document.getElementById("dashProg").textContent = `${appState.progress}%`;
+  if (document.getElementById("dashProgLabel")) document.getElementById("dashProgLabel").textContent = `${appState.progress}%`;
+  if (document.getElementById("dashMeta")) document.getElementById("dashMeta").textContent = appState.currentGoal || "Nenhuma meta definida";
+
+  const pBar = document.getElementById("dashProgressBar");
+  if (pBar) pBar.style.width = `${appState.progress}%`;
+  const bFill = document.getElementById("barFill");
+  if (bFill) bFill.style.width = `${appState.progress}%`;
+  const pFill = document.getElementById("progressFill");
+  if (pFill) pFill.style.width = `${appState.progress}%`;
+
+  if (document.getElementById("barLabel")) document.getElementById("barLabel").textContent = `${appState.progress}%`;
+  if (document.getElementById("progressText")) document.getElementById("progressText").textContent = `${appState.progress}%`;
+  if (document.getElementById("streakDisplay")) document.getElementById("streakDisplay").textContent = `${appState.streak} dias`;
+
+  const dashDiet = document.getElementById("dashDiet");
+  const statusDieta = document.getElementById("statusDieta");
+  if (dashDiet && statusDieta) {
+    if (appState.dietGenerated) {
+      dashDiet.textContent = "Ativa";
+      statusDieta.innerHTML = `<span class="status-dot status-dot--on"></span><span>Dieta estruturada</span>`;
+    } else {
+      dashDiet.textContent = "—";
+      statusDieta.innerHTML = `<span class="status-dot status-dot--off"></span><span>Dieta não gerada</span>`;
     }
   }
-};
 
-function log(level, msg) {
-  const icons = { info: "ℹ️", warn: "⚠️", err: "❌" };
-  console.log(`${icons[level] || "•"} [HealthUp] ${msg}`);
+  renderDashboardHistory();
 }
 
-/* ════════════════════════════════════════
-   TOAST
-════════════════════════════════════════ */
-function toast(msg, type = "info", duration = 3200) {
-  const colors = { info:"#007aff", success:"#00b248", warning:"#e67e00", error:"#cc0000" };
-  const icons  = { info:"ℹ️", success:"✅", warning:"⚠️", error:"❌" };
-
-  const el = document.createElement("div");
-  el.className = "toast-el";
-  el.style.cssText = `
-    position:fixed;bottom:28px;right:28px;z-index:9999;
-    background:rgba(10,15,28,0.97);
-    border:1px solid ${colors[type]}55;
-    border-left:4px solid ${colors[type]};
-    color:#f0f4ff;padding:13px 18px;border-radius:10px;
-    font-size:.87rem;max-width:320px;line-height:1.5;
-    box-shadow:0 8px 32px rgba(0,0,0,.55);
-    display:flex;align-items:center;gap:10px;
-    animation:slideInToast .3s ease both;
-    font-family:'Segoe UI',system-ui,sans-serif;
-  `;
-  el.innerHTML = `<span style="flex-shrink:0">${icons[type]}</span><span>${msg}</span>`;
-  document.body.appendChild(el);
-  setTimeout(() => {
-    el.style.animation = "slideOutToast .3s ease forwards";
-    setTimeout(() => el.remove(), 300);
-  }, duration);
-}
-
-/* ════════════════════════════════════════
-   MODAL
-════════════════════════════════════════ */
-function showModal(title, body, actions = []) {
-  document.getElementById("modalOverlay")?.remove();
-  const overlay = document.createElement("div");
-  overlay.id = "modalOverlay";
-  overlay.style.cssText = `
-    position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:8888;
-    display:flex;align-items:center;justify-content:center;
-    backdrop-filter:blur(8px);animation:fadeModalIn .25s ease both;
-    font-family:'Segoe UI',system-ui,sans-serif;
-  `;
-  const btns = actions.map(a => `
-    <button onclick="${a.fn}();document.getElementById('modalOverlay').remove()"
-      style="background:${a.danger?"linear-gradient(135deg,#a00,#f44)":"linear-gradient(135deg,#007aff,#00c6ff)"};
-      color:#fff;border:none;padding:10px 22px;border-radius:8px;cursor:pointer;
-      font-weight:600;font-size:.88rem;font-family:inherit;">
-      ${a.label}
-    </button>`).join("");
-  overlay.innerHTML = `
-    <div style="background:#0c1525;border:1px solid rgba(255,255,255,.1);
-      border-radius:18px;padding:34px;max-width:420px;width:90%;
-      box-shadow:0 28px 70px rgba(0,0,0,.65);">
-      <h3 style="font-size:1.2rem;margin-bottom:12px;color:#f0f4ff">${title}</h3>
-      <p style="color:#8899b0;font-size:.9rem;margin-bottom:26px;line-height:1.65">${body}</p>
-      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
-        <button onclick="document.getElementById('modalOverlay').remove()"
-          style="background:rgba(255,255,255,.07);color:#b0b8c8;
-          border:1px solid rgba(255,255,255,.1);padding:10px 20px;border-radius:8px;
-          cursor:pointer;font-size:.88rem;font-family:inherit;">Cancelar</button>
-        ${btns}
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-}
-
-/* ════════════════════════════════════════
-   NAVEGAÇÃO
-════════════════════════════════════════ */
-function navigate(page, btn) {
-  document.querySelectorAll(".page").forEach(p => p.classList.remove("show"));
-  document.getElementById(page).classList.add("show");
-  document.querySelectorAll(".nav").forEach(b => b.classList.remove("active"));
-  if (btn) btn.classList.add("active");
-  const label = btn?.querySelector("span")?.textContent || page;
-  document.title = `HealthUp — ${label}`;
-}
-
-/* ════════════════════════════════════════
-   SYNC CENTRAL DE PROGRESSO
-════════════════════════════════════════ */
-function syncProgress(value, save = true) {
-  const prev = state.progress;
-  const next = Math.min(100, Math.max(0, value));
-
-  const pct = next + "%";
-  ["progressFill","dashProgressBar","barFill"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.width = pct;
-  });
-  ["progressText","dashProg","dashProgLabel","barLabel"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = pct;
-  });
-  const inp = document.getElementById("progressInput");
-  if (inp && document.activeElement !== inp) inp.value = next;
-
-  if (save) api.save({ progress: next });
-  state.progress = next;
-
-  if (prev < 100 && next === 100) celebrateGoal();
-}
-
-/* ════════════════════════════════════════
-   CELEBRAÇÃO 🎉
-════════════════════════════════════════ */
-function celebrateGoal() {
-  launchConfetti();
-  showModal(
-    "🏆 Meta atingida!",
-    `Parabéns! Você chegou a 100%${state.goal ? ` do objetivo "<strong>${escHtml(state.goal)}</strong>"` : ""}!<br><br>Hora de definir um novo desafio e continuar evoluindo.`,
-    [{ label: "Resetar e recomeçar", fn: "resetProgress", danger: true }]
-  );
-}
-
-function launchConfetti() {
-  const canvas = document.createElement("canvas");
-  canvas.style.cssText = "position:fixed;inset:0;z-index:9990;pointer-events:none";
-  canvas.width  = window.innerWidth;
-  canvas.height = window.innerHeight;
-  document.body.appendChild(canvas);
-  const ctx = canvas.getContext("2d");
-  const palette = ["#00c6ff","#007aff","#00e676","#b47cff","#ffb347","#ff6b6b","#fff"];
-
-  const pieces = Array.from({ length: 140 }, () => ({
-    x: Math.random() * canvas.width,
-    y: Math.random() * -canvas.height * 1.2,
-    r: Math.random() * 6 + 3,
-    d: Math.random() * 2.5 + 1,
-    color: palette[Math.floor(Math.random() * palette.length)],
-    tiltAngle: 0,
-    tiltSpeed: Math.random() * 0.1 + 0.04,
-  }));
-
-  let frame = 0;
-  (function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    pieces.forEach(p => {
-      p.tiltAngle += p.tiltSpeed;
-      p.y += p.d + Math.sin(frame * 0.01) * 0.4;
-      p.x += Math.sin(frame * 0.012 + p.tiltAngle) * 0.7;
-      if (p.y > canvas.height) { p.y = -10; p.x = Math.random() * canvas.width; }
-      ctx.beginPath();
-      ctx.lineWidth   = p.r;
-      ctx.strokeStyle = p.color;
-      ctx.moveTo(p.x + Math.sin(p.tiltAngle) * 10, p.y);
-      ctx.lineTo(p.x, p.y + p.r * 1.5);
-      ctx.stroke();
-    });
-    frame++;
-    if (frame < 260) requestAnimationFrame(draw);
-    else canvas.remove();
-  })();
-}
-
-/* ════════════════════════════════════════
-   STREAK
-════════════════════════════════════════ */
-function updateStreak() {
-  const today     = new Date().toDateString();
-  const yesterday = new Date(Date.now() - 86400000).toDateString();
-  if (state.lastWorkout === today) return;
-
-  const newStreak = state.lastWorkout === yesterday ? state.streak + 1 : 1;
-  api.save({ streak: newStreak, lastWorkout: today });
-  renderStreak(newStreak);
-}
-
-function renderStreak(val) {
-  const v = val ?? state.streak;
-  ["dashStreak","streakDisplay"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = v + (v === 1 ? " dia" : " dias");
-  });
-}
-
-/* ════════════════════════════════════════
-   TREINO
-════════════════════════════════════════ */
-const WORKOUTS = {
-  peito:   [{n:"Supino reto",s:"4×8-12"},{n:"Supino inclinado",s:"3×10"},{n:"Crucifixo",s:"3×12"},{n:"Crossover",s:"3×15"},{n:"Pullover",s:"3×12"}],
-  costas:  [{n:"Barra fixa",s:"4×8"},{n:"Remada curvada",s:"4×10"},{n:"Pulldown",s:"3×12"},{n:"Levantamento terra",s:"3×6"},{n:"Remada unilateral",s:"3×12"}],
-  perna:   [{n:"Agachamento livre",s:"4×10"},{n:"Leg press",s:"4×12"},{n:"Cadeira extensora",s:"3×15"},{n:"Cadeira flexora",s:"3×15"},{n:"Panturrilha em pé",s:"4×20"}],
-  biceps:  [{n:"Rosca direta",s:"4×10"},{n:"Rosca alternada",s:"3×12"},{n:"Rosca martelo",s:"3×12"},{n:"Rosca concentrada",s:"3×12"},{n:"Rosca 21",s:"3×21"}],
-  triceps: [{n:"Tríceps corda",s:"4×12"},{n:"Tríceps testa",s:"3×10"},{n:"Mergulho no banco",s:"3×15"},{n:"Tríceps francês",s:"3×10"},{n:"Tríceps coice",s:"3×12"}],
-  ombro:   [{n:"Desenvolvimento",s:"4×10"},{n:"Elevação lateral",s:"3×15"},{n:"Elevação frontal",s:"3×12"},{n:"Remada alta",s:"3×12"},{n:"Encolhimento",s:"3×15"}],
-  abdomen: [{n:"Crunch",s:"4×20"},{n:"Prancha",s:"3×45s"},{n:"Abdominal bicicleta",s:"3×20"},{n:"Elevação de pernas",s:"3×15"},{n:"Oblíquo",s:"3×20"}],
-};
-
-function generateWorkout() {
-  const muscle = document.getElementById("muscle").value;
-  const list   = document.getElementById("workoutList");
-  if (!muscle) { list.innerHTML = ""; return; }
-
-  list.innerHTML = WORKOUTS[muscle].map((e, i) => `
-    <div class="exercise" style="animation-delay:${i * 0.07}s">
-      <div style="display:flex;align-items:center;gap:12px">
-        <span class="ex-num">${i + 1}</span>
-        <span>${e.n}</span>
-      </div>
-      <span class="ex-sets">${e.s}</span>
-    </div>`).join("");
-
-  const newWorkouts = state.workouts + 1;
-  const entry = {
-    muscle,
-    exercises: WORKOUTS[muscle].map(e => e.n),
-    date: new Date().toLocaleDateString("pt-BR"),
-    ts: Date.now(),
-  };
-  const newHist = [entry, ...state.treinoHist].slice(0, 20);
-
-  api.save({ workouts: newWorkouts, treinoHist: newHist });
-  document.getElementById("dashWorkouts").textContent = newWorkouts;
-  updateStreak();
-  renderTreinoHist(newHist);
-  toast(`Treino de ${muscle.charAt(0).toUpperCase() + muscle.slice(1)} gerado! 💪`, "success");
-}
-
-function renderTreinoHist(hist) {
-  const h   = hist ?? state.treinoHist;
+function renderDashboardHistory() {
   const container = document.getElementById("treinoHistorico");
   if (!container) return;
-  if (!h.length) {
-    container.innerHTML = "<p style=\"color:var(--muted);font-size:.85rem\">Nenhum treino ainda.</p>";
+
+  if (!appState.routines || appState.routines.length === 0) {
+    container.innerHTML = `<p style="color:var(--muted);font-size:.85rem">Nenhum treino ainda.</p>`;
     return;
   }
-  container.innerHTML = h.slice(0, 6).map(t => `
-    <div class="hist-item">
-      <strong>${t.muscle.charAt(0).toUpperCase() + t.muscle.slice(1)}</strong>
-      <span>${t.date}</span>
-    </div>`).join("");
+
+  const filtered = appState.routines
+    .filter(r => r.workout && r.workout.trim() !== "")
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 3);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<p style="color:var(--muted);font-size:.85rem">Nenhum treino listado na rotina.</p>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(item => {
+    const formattedDate = new Date(item.date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    return `
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:4px;">
+        <strong>${item.workout.split('\n')[0]}</strong>
+        <span style="color:var(--muted)">${formattedDate}</span>
+      </div>
+    `;
+  }).join('');
 }
 
-/* ════════════════════════════════════════
-   DIETA — sugestões locais
-════════════════════════════════════════ */
-function generateDiet() {
-  const btn = document.querySelector("#dieta .btn");
-  if (btn) { btn.disabled = true; btn.textContent = "Gerando dieta…"; }
+/* ══════════════════════════════════════════
+   ÍCONES VETORIAIS (SVG) REUTILIZÁVEIS
+══════════════════════════════════════════ */
+const iconesSVG = {
+  haltere: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="10" width="3" height="4" rx="1"/>
+    <rect x="19" y="10" width="3" height="4" rx="1"/>
+    <rect x="5" y="8" width="3" height="8" rx="1"/>
+    <rect x="16" y="8" width="3" height="8" rx="1"/>
+    <line x1="8" y1="12" x2="16" y2="12"/>
+  </svg>`,
 
-  const preMeals  = ["Banana com aveia e mel","Tapioca com queijo branco","Pão integral com pasta de amendoim","Batata-doce assada"];
-  const postMeals = ["Arroz integral + frango grelhado","Whey protein + fruta","Wrap com ovo mexido + legumes","Omelete com queijo e espinafre"];
+  corrida: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="14" cy="4" r="1.5"/>
+    <path d="M10 8l2 2 2-2 1 4-3 1v4"/>
+    <path d="M9 13l-2 4"/>
+    <path d="M14 13l2 4"/>
+    <path d="M8 10l-2 1"/>
+  </svg>`,
 
-  document.getElementById("preWorkout").innerHTML  = preMeals.map(e  => `<div class="diet-item">${escHtml(e)}</div>`).join("");
-  document.getElementById("postWorkout").innerHTML = postMeals.map(e => `<div class="diet-item">${escHtml(e)}</div>`).join("");
-  toast("Dieta gerada com sugestões disponíveis! 🥗", "success");
+  cronometro: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="13" r="8"/>
+    <path d="M12 9v4l3 2"/>
+    <path d="M10 3h4"/>
+    <path d="M12 3v2"/>
+    <path d="M19 6l-1.5 1.5"/>
+  </svg>`,
 
-  state.dietaGerada = true;
-  sessionStorage.setItem("dietaGerada", "1");
-  document.getElementById("dashDiet").textContent = "✓ OK";
-  const s = document.getElementById("statusDieta");
-  if (s) s.innerHTML = "<span class=\"status-dot status-dot--on\"></span><span>Dieta gerada</span>";
+  estrela: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2l2.9 6.1L22 9.3l-5 4.9 1.2 6.8L12 17.7l-6.2 3.3L7 14.2 2 9.3l7.1-1.2z"/>
+  </svg>`,
 
-  if (btn) {
-    btn.disabled = false;
-    btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Gerar nova dieta`;
+  coracao: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.6z"/>
+  </svg>`
+};
+
+/* ══════════════════════════════════════════
+   BANCO DE DADOS (5 EXERCÍCIOS)
+══════════════════════════════════════════ */
+const dbExercicios = {
+  peito: [
+    { nome: "Supino Reto com Barra",        series: "4x10",  icone: iconesSVG.haltere },
+    { nome: "Supino Inclinado com Halteres", series: "3x12",  icone: iconesSVG.corrida },
+    { nome: "Crucifixo Reto em Banco",       series: "4x12",  icone: iconesSVG.cronometro },
+    { nome: "Crossover na Polia Alta",       series: "3x15",  icone: iconesSVG.estrela },
+    { nome: "Flexão de Braço Solo",          series: "3xMax", icone: iconesSVG.coracao }
+  ],
+  costas: [
+    { nome: "Puxada Aberta no Pulley",   series: "4x10", icone: iconesSVG.haltere },
+    { nome: "Remada Curvada com Barra",  series: "3x12", icone: iconesSVG.corrida },
+    { nome: "Remada Baixa Triângulo",    series: "4x10", icone: iconesSVG.cronometro },
+    { nome: "Pull-Down com Corda",       series: "3x15", icone: iconesSVG.estrela },
+    { nome: "Levantamento Terra",        series: "3x8",  icone: iconesSVG.coracao }
+  ],
+  perna: [
+    { nome: "Agachamento Livre com Barra",    series: "4x10", icone: iconesSVG.haltere },
+    { nome: "Leg Press 45 Graus",             series: "4x12", icone: iconesSVG.corrida },
+    { nome: "Cadeira Extensora",              series: "3x15", icone: iconesSVG.cronometro },
+    { nome: "Mesa Flexora Deitada",           series: "4x12", icone: iconesSVG.estrela },
+    { nome: "Gêmeos em Pé (Panturrilha)",     series: "4x20", icone: iconesSVG.coracao }
+  ],
+  biceps: [
+    { nome: "Rosca Direta na Barra W",      series: "4x10", icone: iconesSVG.haltere },
+    { nome: "Rosca Alternada com Halter",   series: "3x12", icone: iconesSVG.corrida },
+    { nome: "Rosca Martelo na Corda",       series: "4x12", icone: iconesSVG.cronometro },
+    { nome: "Rosca Concentrada",            series: "3x10", icone: iconesSVG.estrela },
+    { nome: "Rosca Inversa (Antebraço)",    series: "3x12", icone: iconesSVG.coracao }
+  ],
+  triceps: [
+    { nome: "Tríceps Pulley com Corda",      series: "4x12", icone: iconesSVG.cronometro },
+    { nome: "Tríceps Testa com Barra",       series: "3x10", icone: iconesSVG.haltere },
+    { nome: "Tríceps Coice na Polia",        series: "3x12", icone: iconesSVG.corrida },
+    { nome: "Mergulho nos Bancos",           series: "4x10", icone: iconesSVG.coracao },
+    { nome: "Tríceps Francês Unilateral",    series: "3x12", icone: iconesSVG.estrela }
+  ],
+  ombro: [
+    { nome: "Desenvolvimento com Halteres",  series: "4x10", icone: iconesSVG.haltere },
+    { nome: "Elevação Lateral Sentado",      series: "4x12", icone: iconesSVG.corrida },
+    { nome: "Crucifixo Invertido Máquina",   series: "3x15", icone: iconesSVG.cronometro },
+    { nome: "Elevação Frontal com Anilha",   series: "3x12", icone: iconesSVG.estrela },
+    { nome: "Encolhimento (Trapézio)",       series: "4x15", icone: iconesSVG.coracao }
+  ],
+  abdomen: [
+    { nome: "Abdominal Supra Solo",          series: "4x20",   icone: iconesSVG.coracao },
+    { nome: "Abdominal Infra na Prancha",    series: "3x15",   icone: iconesSVG.corrida },
+    { nome: "Prancha Isométrica",            series: "3x 1min",icone: iconesSVG.cronometro },
+    { nome: "Abdominal Bicicleta",           series: "3x20",   icone: iconesSVG.estrela },
+    { nome: "Toque no Calcanhar",            series: "4x15",   icone: iconesSVG.haltere }
+  ]
+};
+
+/* ══════════════════════════════════════════
+   SISTEMA DE MODAL COM ANIMAÇÃO DE ENTRADA
+══════════════════════════════════════════ */
+function openMuscleModal(muscleKey) {
+  const modal = document.getElementById("customWorkoutModal");
+  const modalTitle = document.getElementById("customModalTitle");
+  const modalBody = document.getElementById("customModalBody");
+
+  if (!modal || !modalBody) return;
+
+  const nomeMusculo = muscleKey.charAt(0).toUpperCase() + muscleKey.slice(1);
+  modalTitle.textContent = `Treino de ${nomeMusculo}`;
+
+  const lista = dbExercicios[muscleKey] || [];
+
+  if (lista.length === 0) {
+    modalBody.innerHTML = `<p style="color:var(--muted)">Nenhum exercício cadastrado.</p>`;
+  } else {
+    modalBody.innerHTML = lista.map((ex, index) => `
+      <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.05); animation: customItemFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; animation-delay: ${index * 0.05}s; opacity: 0; transform: translateY(12px);">
+        <div style="display:flex; align-items:center; gap:12px; color:#fff;">
+          <span style="color:var(--blue); display:flex; align-items:center; justify-content:center; opacity:0.9;">
+            ${ex.icone}
+          </span>
+          <span style="font-weight:500; font-size:0.9rem;">${ex.nome}</span>
+        </div>
+        <span style="font-size:0.8rem; color:var(--blue); font-weight:bold; background:rgba(0,122,255,0.1); padding:4px 8px; border-radius:4px; border:1px solid rgba(0,122,255,0.15)">${ex.series}</span>
+      </div>
+    `).join('');
+  }
+
+  modal.classList.remove("modal-hide");
+  modal.style.display = "flex";
+
+  const modalBox = modal.querySelector(".custom-modal-content");
+  if (modalBox) {
+    modalBox.style.animation = "customModalScaleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards";
   }
 }
 
-/* ════════════════════════════════════════
-   META
-════════════════════════════════════════ */
+function closeMuscleModal() {
+  const modal = document.getElementById("customWorkoutModal");
+  const modalBox = modal ? modal.querySelector(".custom-modal-content") : null;
+
+  if (!modal || !modalBox) return;
+
+  modalBox.style.animation = "customModalScaleOut 0.2s ease-in forwards";
+  modal.classList.add("modal-hide");
+
+  setTimeout(() => { modal.style.display = "none"; }, 200);
+}
+
+/* ══════════════════════════════════════════
+   GERADOR DE DIETAS COM ANIMAÇÃO
+══════════════════════════════════════════ */
+function generateDiet() {
+  const targetPre = document.getElementById("preWorkout");
+  const targetPost = document.getElementById("postWorkout");
+
+  if (!targetPre || !targetPost) return;
+
+  const isDeficit = appState.currentGoal.toLowerCase().includes("perder") ||
+                    appState.currentGoal.toLowerCase().includes("emagrecer") ||
+                    appState.currentGoal.toLowerCase().includes("secar");
+
+  if (isDeficit) {
+    targetPre.innerHTML = `
+      <div class="diet-item-animated" style="animation-delay:0s;">• Café preto sem açúcar + 2 ovos mexidos</div>
+      <div class="diet-item-animated" style="animation-delay:0.08s;">• 100g de morango ou maçã com 15g de aveia</div>
+    `;
+    targetPost.innerHTML = `
+      <div class="diet-item-animated" style="animation-delay:0.16s;">• 150g de peito de frango grelhado</div>
+      <div class="diet-item-animated" style="animation-delay:0.24s;">• 120g de arroz integral ou batata doce</div>
+    `;
+  } else {
+    targetPre.innerHTML = `
+      <div class="diet-item-animated" style="animation-delay:0s;">• Vitamina: 250ml de leite, 1 banana, 30g de aveia</div>
+      <div class="diet-item-animated" style="animation-delay:0.08s;">• 2 fatias de pão integral com creme de amendoim</div>
+      <div class="diet-item-animated" style="animation-delay:0.16s;">• 1 iogurte grego com mel e granola</div>
+      <div class="diet-item-animated" style="animation-delay:0.24s;">• Banana com aveia e mel</div>
+    `;
+    targetPost.innerHTML = `
+      <div class="diet-item-animated" style="animation-delay:0.16s;">• Iogurte natural com granola</div>
+      <div class="diet-item-animated" style="animation-delay:0.24s;">• 250g de arroz branco cozido + legumes</div>
+      <div class="diet-item-animated" style="animation-delay:0.32s;">• 250g de arroz branco com carne/frango</div>
+      <div class="diet-item-animated" style="animation-delay:0.4s;">• Whey protein, banana e aveia</div>
+    `;
+  }
+
+  appState.dietGenerated = true;
+  saveState();
+}
+
+/* ══════════════════════════════════════════
+   INJEÇÃO DINÂMICA DE ANIMAÇÕES CSS
+══════════════════════════════════════════ */
+function injetaEstilosAnimacao() {
+  if (document.getElementById("appGlobalAnimations")) return;
+
+  const styleBlock = document.createElement("style");
+  styleBlock.id = "appGlobalAnimations";
+  styleBlock.innerHTML = `
+    .custom-modal-overlay {
+      backdrop-filter: blur(0px);
+      transition: backdrop-filter 0.3s ease, background-color 0.3s ease;
+      background-color: rgba(0,0,0,0);
+    }
+    .custom-modal-overlay[style*="display: flex"] {
+      backdrop-filter: blur(8px);
+      background-color: rgba(0,0,0,0.55);
+    }
+    .custom-modal-overlay.modal-hide {
+      backdrop-filter: blur(0px) !important;
+      background-color: rgba(0,0,0,0) !important;
+    }
+    @keyframes customModalScaleIn {
+      from { opacity:0; transform:scale(0.92); }
+      to   { opacity:1; transform:scale(1); }
+    }
+    @keyframes customModalScaleOut {
+      from { opacity:1; transform:scale(1); }
+      to   { opacity:0; transform:scale(0.95); }
+    }
+    @keyframes customItemFadeIn {
+      from { opacity:0; transform:translateY(12px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .diet-item-animated {
+      margin-bottom:6px; padding:8px 10px;
+      background:rgba(255,255,255,0.03);
+      border-radius:6px; border:1px solid rgba(255,255,255,0.04);
+      font-size:0.9rem; color:#fff;
+      opacity:0; transform:translateY(10px);
+      animation: dietSlideUp 0.4s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    @keyframes dietSlideUp {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+  `;
+  document.head.appendChild(styleBlock);
+}
+
+/* ══════════════════════════════════════════
+   METAS & PROGRESSO
+══════════════════════════════════════════ */
 function setGoal() {
-  const val = document.getElementById("goalInput").value.trim();
-  if (!val) { toast("Digite uma meta antes de salvar.", "warning"); return; }
-  api.save({ goal: val });
-  document.getElementById("goalText").textContent = val;
-  document.getElementById("goalDisplay").classList.add("show");
-  const dashMeta = document.getElementById("dashMeta");
-  if (dashMeta) dashMeta.textContent = val.length > 18 ? val.slice(0, 18) + "…" : val;
-  toast("Meta salva! 🎯", "success");
+  const input = document.getElementById("goalInput");
+  const display = document.getElementById("goalDisplay");
+  const textNode = document.getElementById("goalText");
+
+  if (!input || !input.value.trim()) return;
+
+  appState.currentGoal = input.value.trim();
+  if (textNode) textNode.textContent = appState.currentGoal;
+  if (display) display.classList.add("show");
+  input.value = "";
+
+  saveState();
 }
 
 function updateGoal() {
-  const raw = document.getElementById("progressInput").value;
-  const val = parseInt(raw);
-  if (isNaN(val) || raw === "") { toast("Digite um valor entre 0 e 100.", "warning"); return; }
-  syncProgress(val);
-  toast(`Progresso atualizado para ${Math.min(100, Math.max(0, val))}%`, "info");
+  const input = document.getElementById("progressInput");
+  if (!input) return;
+
+  let val = parseInt(input.value, 10);
+  if (isNaN(val)) return;
+  if (val < 0) val = 0;
+  if (val > 100) val = 100;
+
+  appState.progress = val;
+  input.value = "";
+  saveState();
 }
 
-/* ════════════════════════════════════════
-   PROGRESSO
-════════════════════════════════════════ */
 function updateProgress() {
-  if (state.progress >= 100) {
-    showModal("Já está em 100%!", "Você já atingiu a meta. Deseja resetar o progresso para um novo ciclo?",
-      [{ label: "Resetar", fn: "resetProgress", danger: true }]);
-    return;
+  let currentProg = appState.progress + 10;
+  if (currentProg > 100) currentProg = 100;
+  appState.progress = currentProg;
+  appState.workoutsCount += 1;
+
+  const hojeStr = new Date().toISOString().split('T')[0];
+
+  if (appState.lastWorkoutDate) {
+    const diffDays = Math.ceil(
+      Math.abs(new Date(hojeStr) - new Date(appState.lastWorkoutDate)) / (1000 * 60 * 60 * 24)
+    );
+    if (diffDays === 1) appState.streak += 1;
+    else if (diffDays > 1) appState.streak = 1;
+  } else {
+    appState.streak = 1;
   }
-  syncProgress(state.progress + 10);
-  updateStreak();
-  toast(`+10% — você está em ${state.progress}%! 🔥`, "success");
+
+  appState.lastWorkoutDate = hojeStr;
+  saveState();
 }
 
 function resetProgress() {
-  syncProgress(0);
-  toast("Progresso resetado. Bora pro próximo ciclo! 💪", "info");
+  if (confirm("Deseja redefinir todo o progresso acumulado e sequência de dias?")) {
+    appState.progress = 0;
+    appState.streak = 0;
+    appState.workoutsCount = 0;
+    appState.lastWorkoutDate = null;
+    saveState();
+  }
 }
-window.resetProgress = resetProgress;
 
-/* ════════════════════════════════════════
-   ROTINA
-════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   ROTINA SEMANAL
+══════════════════════════════════════════ */
 function salvarRotina() {
-  const data   = document.getElementById("dataInput").value;
-  const treino = document.getElementById("treinoDia").value.trim();
-  const dieta  = document.getElementById("dietaDia").value.trim();
+  const dataInput = document.getElementById("dataInput").value;
+  const treinoDia = document.getElementById("treinoDia").value.trim();
+  const dietaDia = document.getElementById("dietaDia").value.trim();
 
-  if (!data)              { toast("Escolha uma data!", "warning");                                  return; }
-  if (!treino && !dieta) { toast("Preencha treino ou alimentação.", "warning");             return; }
-
-  const newRotinas = [...state.rotinas, { data, treino, dieta }];
-  api.save({ rotinas: newRotinas });
-
-  document.getElementById("treinoDia").value = "";
-  document.getElementById("dietaDia").value  = "";
-  document.getElementById("dataInput").value = "";
-
-  renderRotinas(newRotinas);
-  toast("Rotina salva! 📅", "success");
-}
-
-function deletarRotina(index) {
-  showModal("Excluir rotina", "Tem certeza? Esta ação não pode ser desfeita.",
-    [{ label: "Excluir", fn: `_confirmarDeletar(${index})`, danger: true }]);
-}
-window._confirmarDeletar = function(index) {
-  const newRotinas = [...state.rotinas];
-  newRotinas.splice(index, 1);
-  api.save({ rotinas: newRotinas });
-  renderRotinas(newRotinas);
-  toast("Rotina excluída.", "info");
-};
-
-function renderRotinas(rotinas) {
-  const r         = rotinas ?? state.rotinas;
-  const container = document.getElementById("historicoRotina");
-  if (!container) return;
-  if (!r.length) {
-    container.innerHTML = "<p style=\"color:var(--muted);font-size:.88rem\">Nenhuma rotina salva ainda.</p>";
+  if (!dataInput) {
+    alert("Selecione uma data para o registro.");
     return;
   }
-  container.innerHTML = [...r]
-    .map((item, i) => ({ item, i }))
-    .reverse()
-    .map(({ item, i }) => `
-      <div class="itemRotina">
-        <strong>📅 ${formatDate(item.data)}</strong>
-        ${item.treino ? `<p>💪 ${escHtml(item.treino)}</p>` : ""}
-        ${item.dieta  ? `<p>🍎 ${escHtml(item.dieta)}</p>`  : ""}
-        <div class="rotina-actions">
-          <button class="btn btn-sm btn-danger" onclick="deletarRotina(${i})">Excluir</button>
-        </div>
-      </div>`).join("");
+
+  const novaRotina = { date: dataInput, workout: treinoDia, diet: dietaDia };
+  const existingIdx = appState.routines.findIndex(r => r.date === dataInput);
+
+  if (existingIdx > -1) appState.routines[existingIdx] = novaRotina;
+  else appState.routines.push(novaRotina);
+
+  document.getElementById("dataInput").value = "";
+  document.getElementById("treinoDia").value = "";
+  document.getElementById("dietaDia").value = "";
+
+  saveState();
+  renderRoutineList();
 }
 
-/* ════════════════════════════════════════
-   PERFIL E CÁLCULO DE IMC
-════════════════════════════════════════ */
-function salvarPerfil(e) {
-  e.preventDefault();
-  
-  const nome = document.getElementById("perfilNome").value.trim();
+function excluirRotina(index) {
+  appState.routines.splice(index, 1);
+  saveState();
+  renderRoutineList();
+}
+
+function renderRoutineList() {
+  const listElement = document.getElementById("historicoRotina");
+  if (!listElement) return;
+
+  if (!appState.routines || appState.routines.length === 0) {
+    listElement.innerHTML = `<p style="color:var(--muted);font-size:.9rem">Nenhuma rotina salva ainda.</p>`;
+    return;
+  }
+
+  const ordenadas = [...appState.routines].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  listElement.innerHTML = ordenadas.map((item, idx) => {
+    const formattedDate = new Date(item.date + 'T00:00:00').toLocaleDateString('pt-BR');
+    return `
+      <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong style="color:var(--blue)">${formattedDate}</strong>
+          <button onclick="excluirRotina(${idx})" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:0.8rem;">Excluir</button>
+        </div>
+        <p style="margin:4px 0; font-size:0.9rem;"><strong>Treino:</strong> ${item.workout || 'Nenhum'}</p>
+        <p style="margin:4px 0; font-size:0.9rem;"><strong>Alimentação:</strong> ${item.diet || 'Nenhuma'}</p>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════
+   PERFIL & CÁLCULO DE IMC
+══════════════════════════════════════════ */
+function loadProfileData() {
+  if (appState.profile) {
+    if (document.getElementById("perfilNome")) document.getElementById("perfilNome").value = appState.profile.name || "";
+    if (document.getElementById("perfilAltura")) document.getElementById("perfilAltura").value = appState.profile.height || "";
+    if (document.getElementById("perfilPeso")) document.getElementById("perfilPeso").value = appState.profile.weight || "";
+    if (appState.profile.currentGoal) appState.currentGoal = appState.profile.currentGoal;
+  }
+}
+
+function salvarPerfil(event) {
+  event.preventDefault();
+
+  const nome = document.getElementById("perfilNome").value;
   const altura = parseFloat(document.getElementById("perfilAltura").value);
   const peso = parseFloat(document.getElementById("perfilPeso").value);
 
-  if (!nome || isNaN(altura) || isNaN(peso)) {
-    toast("Preencha todos os campos corretamente.", "warning");
-    return;
-  }
+  if (!nome || !altura || !peso) return;
+
+  appState.profile = { name: nome, height: altura, weight: peso };
 
   const alturaMetros = altura / 100;
-  const imcVal = (peso / (alturaMetros * alturaMetros)).toFixed(1);
-  
-  let classe = "imc-badge--normal";
-  let resultado = "Peso Normal";
+  const imc = (peso / (alturaMetros * alturaMetros)).toFixed(1);
 
-  if (imcVal < 18.5) {
-    resultado = "Abaixo do Peso";
-    classe = "imc-badge--alerta";
-  } else if (imcVal >= 25 && imcVal < 30) {
-    resultado = "Sobrepeso";
-    classe = "imc-badge--alerta";
-  } else if (imcVal >= 30) {
-    resultado = "Obesidade";
-    classe = "imc-badge--perigo";
-  }
+  let resultado = "";
+  if (imc < 18.5) resultado = "Abaixo do peso";
+  else if (imc < 25) resultado = "Peso normal";
+  else if (imc < 30) resultado = "Sobrepeso";
+  else resultado = "Obesidade";
 
-  const novoPerfil = { nome, altura, peso };
-  const novaMedicao = {
-    data: new Date().toLocaleDateString("pt-BR"),
-    peso: peso + " kg",
-    imc: imcVal,
-    resultado,
-    classe,
-    ts: Date.now()
-  };
+  if (!appState.imcHistory) appState.imcHistory = [];
+  appState.imcHistory.unshift({
+    date: new Date().toLocaleDateString('pt-BR'),
+    weight: peso,
+    imc: imc,
+    result: resultado
+  });
 
-  const novoHist = [novaMedicao, ...state.imcHist].slice(0, 15);
-
-  state.perfil = novoPerfil;
-  api.save({ perfil: novoPerfil, imcHist: novoHist });
-
-  renderImcHist(novoHist);
-  toast(`Perfil salvo! Seu IMC é ${imcVal} (${resultado}).`, "success");
+  saveState();
+  renderIMCHistory();
+  alert("Perfil atualizado com sucesso!");
 }
 
-function renderImcHist(hist) {
-  const h = hist ?? state.imcHist;
-  const container = document.getElementById("historicoImcLista");
-  if (!container) return;
+function renderIMCHistory() {
+  const tabela = document.getElementById("historicoImcLista");
+  if (!tabela) return;
 
-  if (!h.length) {
-    container.innerHTML = `<tr><td colspan="4" style="color:var(--muted); text-align:center; font-size:.85rem; padding: 20px;">Nenhuma medição cadastrada.</td></tr>`;
+  if (!appState.imcHistory || appState.imcHistory.length === 0) {
+    tabela.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--muted); padding:10px;">Nenhuma medição registrada.</td></tr>`;
     return;
   }
 
-  container.innerHTML = h.map(m => `
+  tabela.innerHTML = appState.imcHistory.map(item => `
     <tr>
-      <td>${m.data}</td>
-      <td><strong>${m.peso}</strong></td>
-      <td>${m.imc}</td>
-      <td><span class="imc-badge ${m.classe}">${m.resultado}</span></td>
+      <td>${item.date}</td>
+      <td>${item.weight} kg</td>
+      <td>${item.imc}</td>
+      <td><span style="color:${item.result === 'Peso normal' ? 'var(--green)' : 'var(--orange)'}">${item.result}</span></td>
     </tr>
-  `).join("");
+  `).join('');
 }
 
 function limparHistoricoIMC() {
-  showModal("Apagar Histórico de IMC", "Deseja realmente deletar todas as suas medições passadas?", [
-    {
-      label: "Apagar tudo",
-      danger: true,
-      fn: "_confirmarLimparIMC"
-    }
-  ]);
-}
-
-window._confirmarLimparIMC = function() {
-  api.save({ imcHist: [] });
-  renderImcHist([]);
-  toast("Histórico de medições limpo.", "info");
-};
-
-/* ════════════════════════════════════════
-   HELPERS
-════════════════════════════════════════ */
-function formatDate(iso) {
-  if (!iso) return "—";
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-}
-function escHtml(str) {
-  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
-
-/* ════════════════════════════════════════
-   INIT
-════════════════════════════════════════ */
-window.addEventListener("DOMContentLoaded", async () => {
-  const style = document.createElement("style");
-  style.textContent = `
-    @keyframes slideInToast  { from{opacity:0;transform:translateX(60px)} to{opacity:1;transform:translateX(0)} }
-    @keyframes slideOutToast { from{opacity:1;transform:translateX(0)} to{opacity:0;transform:translateX(60px)} }
-    @keyframes fadeModalIn   { from{opacity:0} to{opacity:1} }
-  `;
-  document.head.appendChild(style);
-
-  const dateBadge = document.getElementById("dateBadge");
-  if (dateBadge) dateBadge.textContent = new Date().toLocaleDateString("pt-BR", { weekday:"long", day:"numeric", month:"long" });
-
-  await api.loadUser();
-
-  syncProgress(state.progress, false);
-  document.getElementById("dashWorkouts").textContent = state.workouts;
-  renderStreak();
-
-  if (state.goal) {
-    document.getElementById("goalText").textContent = state.goal;
-    document.getElementById("goalInput").value      = state.goal;
-    document.getElementById("goalDisplay").classList.add("show");
-    const dashMeta = document.getElementById("dashMeta");
-    if (dashMeta) dashMeta.textContent = state.goal.length > 18 ? state.goal.slice(0, 18) + "…" : state.goal;
+  if (confirm("Tem certeza que deseja apagar todo o histórico de IMC?")) {
+    appState.imcHistory = [];
+    saveState();
+    renderIMCHistory();
   }
-
-  if (state.dietaGerada) {
-    document.getElementById("dashDiet").textContent = "✓ OK";
-    const s = document.getElementById("statusDieta");
-    if (s) s.innerHTML = "<span class=\"status-dot status-dot--on\"></span><span>Dieta gerada</span>";
-  }
-
-  if (state.perfil && state.perfil.nome) {
-    document.getElementById("perfilNome").value = state.perfil.nome;
-    document.getElementById("perfilAltura").value = state.perfil.altura;
-    document.getElementById("perfilPeso").value = state.perfil.peso;
-  }
-
-  renderTreinoHist();
-  renderRotinas();
-  renderImcHist();
-
-  document.getElementById("progressInput")?.addEventListener("input", function() {
-    const v = parseInt(this.value);
-    this.style.borderColor = (isNaN(v) || v < 0 || v > 100) ? "#f44" : "";
-  });
-});
+}
