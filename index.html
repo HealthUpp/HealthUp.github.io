@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HealthUp Pro</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HealthUp Pro</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="app">
@@ -158,24 +158,21 @@
     <section id="treino" class="page">
       <div class="page-header">
         <div>
-          <h2>Treino</h2>
-          <p class="section-desc">Selecione o grupo muscular para gerar os exercícios</p>
+          <h2>Treino por Grupos</h2>
+          <p class="section-desc">Toque em um músculo para carregar seus exercícios</p>
         </div>
       </div>
-      <select id="muscle">
-        <option value="">— Escolha o músculo —</option>
-        <option value="peito">Peito</option>
-        <option value="costas">Costas</option>
-        <option value="perna">Perna</option>
-        <option value="biceps">Bíceps</option>
-        <option value="triceps">Tríceps</option>
-        <option value="ombro">Ombro</option>
-        <option value="abdomen">Abdômen</option>
-      </select>
-      <button class="btn" onclick="generateWorkout()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        Gerar treino
-      </button>
+      
+      <div id="customMuscleGrid">
+        <div class="custom-muscle-card" onclick="openMuscleModal('peito')">Peito</div>
+        <div class="custom-muscle-card" onclick="openMuscleModal('costas')">Costas</div>
+        <div class="custom-muscle-card" onclick="openMuscleModal('perna')">Perna</div>
+        <div class="custom-muscle-card" onclick="openMuscleModal('biceps')">Bíceps</div>
+        <div class="custom-muscle-card" onclick="openMuscleModal('triceps')">Tríceps</div>
+        <div class="custom-muscle-card" onclick="openMuscleModal('ombro')">Ombro</div>
+        <div class="custom-muscle-card" onclick="openMuscleModal('abdomen')">Abdômen</div>
+      </div>
+      
       <div id="workoutList" class="exercise-list"></div>
     </section>
 
@@ -343,8 +340,7 @@
                   <th>Resultado</th>
                 </tr>
               </thead>
-              <tbody id="historicoImcLista">
-                </tbody>
+              <tbody id="historicoImcLista"></tbody>
             </table>
           </div>
         </div>
@@ -353,6 +349,21 @@
 
   </main>
 </div>
+
+<div id="customWorkoutModal" class="custom-modal-overlay" style="display: none;">
+  <div class="custom-modal-content">
+    <div class="custom-modal-header">
+      <h3 id="customModalTitle">Treino</h3>
+      <button class="custom-modal-close" onclick="closeMuscleModal()">&times;</button>
+    </div>
+    <div id="customModalBody" class="custom-modal-body">
+      </div>
+    <button class="btn" style="width: 100%; justify-content: center;" onclick="closeMuscleModal()">
+      Concluir Visualização
+    </button>
+  </div>
+</div>
+
 <script src="script.js"></script>
 </body>
 </html>
